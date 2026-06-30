@@ -13,8 +13,7 @@ GameObject:
   - component: {fileID: 23176900498370292}
   - component: {fileID: 64382235075026734}
   - component: {fileID: 550416924656394061}
-  - component: {fileID: 7788147740226172395}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Tunnel3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31,9 +30,10 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children:
+  - {fileID: 6880118885531745634}
   - {fileID: 2047689878089250640}
   - {fileID: 4808477614364532057}
   m_Father: {fileID: 0}
@@ -131,14 +131,46 @@ MonoBehaviour:
   propPoints: []
   propSpawnChance: 0.4
   possibleProps: []
-  collisionBounds: {fileID: 7788147740226172395}
---- !u!65 &7788147740226172395
+  collisionBounds: {fileID: 4960991628961723137}
+--- !u!1 &5368502938798587534
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6880118885531745634}
+  - component: {fileID: 4960991628961723137}
+  m_Layer: 3
+  m_Name: Collider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6880118885531745634
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368502938798587534}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4610622268726666}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4960991628961723137
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057628517641284}
+  m_GameObject: {fileID: 5368502938798587534}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -151,8 +183,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 6.212199, y: 5.3105044, z: 11.5}
-  m_Center: {x: 0.18022299, y: 2.6388109, z: -0.0000009536743}
+  m_Size: {x: 4.7506356, y: 4.064173, z: 11.5}
+  m_Center: {x: 0.45494276, y: 1.970412, z: -0.0000009536743}
 --- !u!1 &6030118931922503979
 GameObject:
   m_ObjectHideFlags: 0

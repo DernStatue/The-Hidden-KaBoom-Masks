@@ -13,8 +13,7 @@ GameObject:
   - component: {fileID: 23240223204011304}
   - component: {fileID: 64729401730461840}
   - component: {fileID: 6929209954956827365}
-  - component: {fileID: 1311385936073903502}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: RampDown
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31,11 +30,12 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 369647635306358796}
   - {fileID: 2875811657916273413}
+  - {fileID: 1530072871257569564}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &33933681064006334
@@ -131,14 +131,46 @@ MonoBehaviour:
   propPoints: []
   propSpawnChance: 0.4
   possibleProps: []
-  collisionBounds: {fileID: 1311385936073903502}
---- !u!65 &1311385936073903502
+  collisionBounds: {fileID: 3591312146447532333}
+--- !u!1 &4537197066782427387
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1530072871257569564}
+  - component: {fileID: 3591312146447532333}
+  m_Layer: 3
+  m_Name: Collider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1530072871257569564
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4537197066782427387}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4826429794532074}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &3591312146447532333
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1653069070721738}
+  m_GameObject: {fileID: 4537197066782427387}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
