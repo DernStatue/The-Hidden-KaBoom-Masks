@@ -14,7 +14,8 @@ GameObject:
   - component: {fileID: 64328641894669522}
   - component: {fileID: 1927238316410647638}
   - component: {fileID: -8664037029896469471}
-  m_Layer: 0
+  - component: {fileID: 1400304965268042062}
+  m_Layer: 3
   m_Name: TurnL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -36,7 +37,6 @@ Transform:
   m_Children:
   - {fileID: 6828683835642812852}
   - {fileID: 133999220660804258}
-  - {fileID: 3617522845716227214}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &33077436813417072
@@ -129,10 +129,17 @@ MonoBehaviour:
   entrance: {fileID: 6828683835642812852}
   exits:
   - {fileID: 133999220660804258}
-  propPoints: []
+  propVolume: {fileID: 1400304965268042062}
   propSpawnChance: 0.4
+  propAttempts: 10
   possibleProps: []
-  collisionBounds: {fileID: 2636722004325582076}
+  floorLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  raycastStartHeight: 2
+  raycastDistance: 20
+  maxFloorAngle: 45
+  collisionBounds: {fileID: 1400304965268042062}
 --- !u!114 &-8664037029896469471
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -145,47 +152,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e920b56cb14de9459fa687005a18bab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  disableDistance: 120
---- !u!1 &2720151076319579221
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3617522845716227214}
-  - component: {fileID: 2636722004325582076}
-  m_Layer: 3
-  m_Name: Collider
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &3617522845716227214
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2720151076319579221}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 4072993402720666}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &2636722004325582076
+  disableDistance: 1000
+--- !u!65 &1400304965268042062
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2720151076319579221}
+  m_GameObject: {fileID: 1645912678775834}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2

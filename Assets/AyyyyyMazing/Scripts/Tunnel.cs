@@ -2,42 +2,110 @@ using UnityEngine;
 
 public class TunnelPiece : MonoBehaviour
 {
-    [Header("Tunnel Connections")]
+    [Header("Connections")]
     public Transform entrance;
+
     public Transform[] exits;
 
-    [Header("Props")]
-    public Transform[] propPoints;
+    [Header("Grid Shape")]
+    public Vector3Int[] occupiedCells;
 
-    [Range(0f, 1f)]
-    public float propSpawnChance = 0.4f;
+    [Header("Generation")]
+    public bool allowBranching = true;
+
+    [Header("Props")]
+    public BoxCollider propVolume;
 
     public GameObject[] possibleProps;
 
-    [Header("Collision Check")]
-    public BoxCollider collisionBounds;
+    [Range(0f, 1f)]
+    public float propSpawnChance = 0.35f;
 
-    public void SpawnProps(System.Random rng)
+    public int propAttempts = 6;
+
+    public void SpawnProps(
+        System.Random rng
+    )
     {
-        if (possibleProps.Length == 0)
+        if (
+            possibleProps == null ||
+            possibleProps.Length == 0
+        )
+        {
+            return;
+        }
+
+        if (propVolume == null)
             return;
 
-        foreach (Transform point in propPoints)
+        Bounds bounds =
+            propVolume.bounds;
+
+        for (
+            int i = 0;
+            i < propAttempts;
+            i++
+        )
         {
-            double randomValue = rng.NextDouble();
-
-            if (randomValue <= propSpawnChance)
+            if (
+                rng.NextDouble() >
+                propSpawnChance
+            )
             {
-                int propIndex =
-                    rng.Next(possibleProps.Length);
+                continue;
+            }
 
-                GameObject selectedProp =
-                    possibleProps[propIndex];
+            GameObject selectedProp =
+                possibleProps[
+                    rng.Next(
+                        possibleProps.Length
+                    )
+                ];
+
+            Vector3 randomPos =
+                new Vector3(
+                    Random.Range(
+                        bounds.min.x,
+                        bounds.max.x
+                    ),
+
+                    bounds.max.y + 2f,
+
+                    Random.Range(
+                        bounds.min.z,
+                        bounds.max.z
+                    )
+                );
+
+            if (
+                Physics.Raycast(
+                    randomPos,
+                    Vector3.down,
+                    out RaycastHit hit,
+                    20f
+                )
+            )
+            {
+                if (
+                    !hit.transform.IsChildOf(
+                        transform
+                    )
+                )
+                {
+                    continue;
+                }
+
+                Quaternion rotation =
+                    Quaternion.Euler(
+                        0f,
+                        rng.Next(0, 360),
+                        0f
+                    );
 
                 Instantiate(
                     selectedProp,
-                    point.position,
-                    point.rotation,
+                    hit.point,
+                    rotation,
                     transform
                 );
             }

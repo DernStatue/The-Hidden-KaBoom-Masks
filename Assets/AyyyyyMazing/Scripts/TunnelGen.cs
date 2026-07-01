@@ -6,24 +6,24 @@ public class TunnelGenerator : MonoBehaviour
     [Header("Generation")]
     public int seed = 12345;
 
-    public int maxPieces = 40;
+    public int maxPieces = 80;
 
-    public float gridSize = 10f;
+    public float gridSize = 36f;
 
-    [Header("Tunnel Pieces")]
-    public TunnelPiece[] normalPieces;
+    [Header("Pieces")]
+    public TunnelPiece[] straightPieces;
+
+    public TunnelPiece[] turnPieces;
 
     public TunnelPiece[] rampUpPieces;
 
     public TunnelPiece[] rampDownPieces;
 
-    [Header("Special Pieces")]
-    public TunnelPiece endPiece;
+    public TunnelPiece[] roomPieces;
 
-    [Header("Boss Room")]
+    public TunnelPiece deadEndPiece;
+
     public TunnelPiece bossRoom;
-
-
 
     private System.Random rng;
 
@@ -35,8 +35,7 @@ public class TunnelGenerator : MonoBehaviour
 
     private Transform furthestExit;
 
-    private float furthestDistance = 0f;
-
+    private float furthestDistance;
 
     void Start()
     {
@@ -47,170 +46,134 @@ public class TunnelGenerator : MonoBehaviour
     {
         rng = new System.Random(seed);
 
-        // Spawn first piece
-        TunnelPiece firstPiece =
+        TunnelPiece startPiece =
             Instantiate(
-                normalPieces[0],
+                straightPieces[0],
                 Vector3.zero,
                 Quaternion.identity
             );
 
-        firstPiece.SpawnProps(rng);
+        RegisterPiece(startPiece);
 
-        // Mark first cell occupied
-        Vector3Int firstCell =
-            WorldToGrid(firstPiece.transform.position);
-
-        occupiedCells.Add(firstCell);
-
-        // Add exits
-        foreach (Transform exit in firstPiece.exits)
+        foreach (
+            Transform exit
+            in startPiece.exits
+        )
         {
             openExits.Add(exit);
         }
 
         int placedPieces = 1;
 
-        while (openExits.Count > 0 &&
-               placedPieces < maxPieces)
+        while (
+            openExits.Count > 0 &&
+            placedPieces < maxPieces
+        )
         {
-            int exitIndex =
+            int index =
                 rng.Next(openExits.Count);
 
             Transform targetExit =
-                openExits[exitIndex];
+                openExits[index];
 
-            openExits.RemoveAt(exitIndex);
+            openExits.RemoveAt(index);
 
-            bool placedSuccessfully =
-            TryPlacePiece(targetExit);
+            bool success =
+                TryPlacePiece(targetExit);
 
-            if (placedSuccessfully)
+            if (success)
             {
                 placedPieces++;
             }
             else
             {
-                SpawnEndPiece(targetExit);
+                SpawnDeadEnd(
+                    targetExit
+                );
             }
-
         }
 
         if (furthestExit != null)
         {
-            SpawnBossRoom(furthestExit);
-        }
-
-    }
-
-    void SpawnBossRoom(Transform targetExit)
-    {
-        TunnelPiece newPiece =
-            Instantiate(bossRoom);
-
-        Quaternion rotationDifference =
-            targetExit.rotation *
-            Quaternion.Inverse(
-                newPiece.entrance.rotation
+            SpawnBossRoom(
+                furthestExit
             );
-
-        newPiece.transform.rotation =
-            rotationDifference *
-            newPiece.transform.rotation;
-
-        Vector3 positionDifference =
-            targetExit.position -
-            newPiece.entrance.position;
-
-        newPiece.transform.position +=
-            positionDifference;
-
-        newPiece.SpawnProps(rng);
+        }
     }
 
-    bool TryPlacePiece(Transform targetExit)
+    bool TryPlacePiece(
+        Transform targetExit
+    )
     {
         List<TunnelPiece> candidates =
             new List<TunnelPiece>();
 
-        candidates.AddRange(normalPieces);
+        candidates.AddRange(
+            straightPieces
+        );
 
-        // Even seeds go upward
-        if (seed % 2 == 0)
+        candidates.AddRange(
+            turnPieces
+        );
+
+        // occasional ramps
+        if (rng.NextDouble() < 0.25)
         {
-            candidates.AddRange(rampUpPieces);
+            candidates.AddRange(
+                rampUpPieces
+            );
+
+            candidates.AddRange(
+                rampDownPieces
+            );
         }
-        else
+
+        // occasional rooms
+        if (rng.NextDouble() < 0.12)
         {
-            candidates.AddRange(rampDownPieces);
+            candidates.AddRange(
+                roomPieces
+            );
         }
 
-        // Try several attempts
-        for (int i = 0; i < 10; i++)
+        for (
+            int i = 0;
+            i < 12;
+            i++
+        )
         {
-            TunnelPiece selectedPrefab =
-                candidates[rng.Next(candidates.Count)];
+            TunnelPiece prefab =
+                candidates[
+                    rng.Next(
+                        candidates.Count
+                    )
+                ];
 
-            TunnelPiece newPiece =
-                Instantiate(selectedPrefab);
+            TunnelPiece piece =
+                Instantiate(prefab);
 
-            // Rotate piece
-            Quaternion rotationDifference =
-                targetExit.rotation *
-                Quaternion.Inverse(
-                    newPiece.entrance.rotation
-                );
+            AlignPieceToExit(
+                piece,
+                targetExit
+            );
 
-            newPiece.transform.rotation =
-                rotationDifference *
-                newPiece.transform.rotation;
-
-            // Move piece into place
-            Vector3 positionDifference =
-                targetExit.position -
-                newPiece.entrance.position;
-
-            newPiece.transform.position +=
-                positionDifference;
-
-            // Grid overlap check
-            Vector3Int gridPos =
-                WorldToGrid(
-                    newPiece.transform.position
-                );
-
-            if (occupiedCells.Contains(gridPos))
+            if (
+                !CanPlacePiece(piece)
+            )
             {
-                Destroy(newPiece.gameObject);
+                Destroy(
+                    piece.gameObject
+                );
+
                 continue;
             }
 
-            // Mark occupied
-            occupiedCells.Add(gridPos);
+            RegisterPiece(piece);
 
-            float distance =
-            Vector3.Distance(
-            Vector3.zero,
-            newPiece.transform.position
-            );
-
-            if (distance > furthestDistance)
-            {
-                furthestDistance = distance;
-
-                // Pick one exit from this piece
-                if (newPiece.exits.Length > 0)
-                {
-                    furthestExit = newPiece.exits[0];
-                }
-            }
-
-
-            // Spawn props
-            newPiece.SpawnProps(rng);
-
-            // Add exits
-            foreach (Transform exit in newPiece.exits)
+            foreach (
+                Transform exit
+                in piece.exits
+            )
             {
                 openExits.Add(exit);
             }
@@ -221,37 +184,164 @@ public class TunnelGenerator : MonoBehaviour
         return false;
     }
 
-    void SpawnEndPiece(Transform targetExit)
+    bool CanPlacePiece(
+        TunnelPiece piece
+    )
     {
-        TunnelPiece newPiece =
-            Instantiate(endPiece);
+        foreach (
+            Vector3Int localCell
+            in piece.occupiedCells
+        )
+        {
+            Vector3 worldPos =
+                piece.transform.position +
+                piece.transform.rotation *
+                Vector3.Scale(
+                    localCell,
+                    Vector3.one *
+                    gridSize
+                );
 
-        Quaternion rotationDifference =
-            targetExit.rotation *
-            Quaternion.Inverse(
-                newPiece.entrance.rotation
-            );
+            Vector3Int cell =
+                WorldToGrid(
+                    worldPos
+                );
 
-        newPiece.transform.rotation =
-            rotationDifference *
-            newPiece.transform.rotation;
+            if (
+                occupiedCells.Contains(
+                    cell
+                )
+            )
+            {
+                return false;
+            }
+        }
 
-        Vector3 positionDifference =
-            targetExit.position -
-            newPiece.entrance.position;
-
-        newPiece.transform.position +=
-            positionDifference;
-
-        newPiece.SpawnProps(rng);
+        return true;
     }
 
-    Vector3Int WorldToGrid(Vector3 position)
+    void RegisterPiece(
+        TunnelPiece piece
+    )
+    {
+        foreach (
+            Vector3Int localCell
+            in piece.occupiedCells
+        )
+        {
+            Vector3 worldPos =
+                piece.transform.position +
+                piece.transform.rotation *
+                Vector3.Scale(
+                    localCell,
+                    Vector3.one *
+                    gridSize
+                );
+
+            occupiedCells.Add(
+                WorldToGrid(
+                    worldPos
+                )
+            );
+        }
+
+        float distance =
+            Vector3.Distance(
+                Vector3.zero,
+                piece.transform.position
+            );
+
+        if (
+            distance >
+            furthestDistance
+        )
+        {
+            furthestDistance =
+                distance;
+
+            if (
+                piece.exits.Length > 0
+            )
+            {
+                furthestExit =
+                    piece.exits[0];
+            }
+        }
+
+        piece.SpawnProps(rng);
+    }
+
+    void SpawnDeadEnd(
+        Transform exit
+    )
+    {
+        TunnelPiece piece =
+            Instantiate(
+                deadEndPiece
+            );
+
+        AlignPieceToExit(
+            piece,
+            exit
+        );
+    }
+
+    void SpawnBossRoom(
+        Transform exit
+    )
+    {
+        TunnelPiece piece =
+            Instantiate(
+                bossRoom
+            );
+
+        AlignPieceToExit(
+            piece,
+            exit
+        );
+    }
+
+    void AlignPieceToExit(
+        TunnelPiece piece,
+        Transform targetExit
+    )
+    {
+        Quaternion rotation =
+            targetExit.rotation *
+            Quaternion.Inverse(
+                piece.entrance.rotation
+            );
+
+        piece.transform.rotation =
+            rotation;
+
+        Vector3 offset =
+            targetExit.position -
+            piece.entrance.position;
+
+        piece.transform.position +=
+            offset;
+    }
+
+    Vector3Int WorldToGrid(
+        Vector3 position
+    )
     {
         return new Vector3Int(
-            Mathf.RoundToInt(position.x / gridSize),
-            Mathf.RoundToInt(position.y / gridSize),
-            Mathf.RoundToInt(position.z / gridSize)
+            Mathf.RoundToInt(
+                position.x /
+                gridSize
+            ),
+
+            Mathf.RoundToInt(
+                position.y /
+                gridSize
+            ),
+
+            Mathf.RoundToInt(
+                position.z /
+                gridSize
+            )
         );
     }
 }
