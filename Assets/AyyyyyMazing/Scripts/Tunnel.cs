@@ -2,44 +2,50 @@ using UnityEngine;
 
 public class TunnelPiece : MonoBehaviour
 {
-    [Header("Connections")]
+    [Header("Tunnel Connections")]
     public Transform entrance;
 
     public Transform[] exits;
 
-    [Header("Grid Shape")]
+    [Header("Occupied Cells")]
     public Vector3Int[] occupiedCells;
 
-    [Header("Generation")]
-    public bool allowBranching = true;
+    [Header("Enemy Spawns")]
+    public Transform[] enemySpawnPoints;
+
+    [Header("Overlap Check")]
+    public BoxCollider overlapCollider;
 
     [Header("Props")]
     public BoxCollider propVolume;
 
+    [Range(0f, 1f)]
+    public float propSpawnChance = 0.4f;
+
+    public int propAttempts = 10;
+
     public GameObject[] possibleProps;
 
-    [Range(0f, 1f)]
-    public float propSpawnChance = 0.35f;
+    [Header("Prop Placement")]
+    public LayerMask floorLayerMask = ~0;
 
-    public int propAttempts = 6;
+    public float raycastStartHeight = 2f;
 
-    public void SpawnProps(
-        System.Random rng
-    )
+    public float raycastDistance = 20f;
+
+    [Range(0f, 90f)]
+    public float maxFloorAngle = 45f;
+
+    public void SpawnProps(System.Random rng)
     {
-        if (
-            possibleProps == null ||
-            possibleProps.Length == 0
-        )
-        {
+        if (possibleProps.Length == 0)
             return;
-        }
 
         if (propVolume == null)
             return;
 
-        Bounds bounds =
-            propVolume.bounds;
+        Vector3 halfSize =
+            propVolume.size * 0.5f;
 
         for (
             int i = 0;
@@ -62,40 +68,67 @@ public class TunnelPiece : MonoBehaviour
                     )
                 ];
 
-            Vector3 randomPos =
+            Vector3 localPoint =
+                propVolume.center +
                 new Vector3(
-                    Random.Range(
-                        bounds.min.x,
-                        bounds.max.x
-                    ),
+                    (float)(
+                        rng.NextDouble() *
+                        2.0 - 1.0
+                    ) * halfSize.x,
 
-                    bounds.max.y + 2f,
+                    halfSize.y +
+                    raycastStartHeight,
 
-                    Random.Range(
-                        bounds.min.z,
-                        bounds.max.z
-                    )
+                    (float)(
+                        rng.NextDouble() *
+                        2.0 - 1.0
+                    ) * halfSize.z
                 );
+
+            Vector3 worldStart =
+                propVolume.transform
+                .TransformPoint(
+                    localPoint
+                );
+
+            Vector3 worldDown =
+                -propVolume.transform.up;
 
             if (
                 Physics.Raycast(
-                    randomPos,
-                    Vector3.down,
+                    worldStart,
+                    worldDown,
                     out RaycastHit hit,
-                    20f
+                    raycastDistance,
+                    floorLayerMask,
+                    QueryTriggerInteraction
+                    .Ignore
                 )
             )
             {
                 if (
-                    !hit.transform.IsChildOf(
-                        transform
-                    )
+                    !hit.transform
+                    .IsChildOf(transform)
                 )
                 {
                     continue;
                 }
 
-                Quaternion rotation =
+                float angle =
+                    Vector3.Angle(
+                        hit.normal,
+                        propVolume.transform.up
+                    );
+
+                if (
+                    angle >
+                    maxFloorAngle
+                )
+                {
+                    continue;
+                }
+
+                Quaternion randomRotation =
                     Quaternion.Euler(
                         0f,
                         rng.Next(0, 360),
@@ -105,7 +138,7 @@ public class TunnelPiece : MonoBehaviour
                 Instantiate(
                     selectedProp,
                     hit.point,
-                    rotation,
+                    randomRotation,
                     transform
                 );
             }

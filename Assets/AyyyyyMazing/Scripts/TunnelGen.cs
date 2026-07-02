@@ -1,19 +1,29 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TunnelGenerator : MonoBehaviour
 {
-    [Header("Generation")]
+    [Header("Seed")]
     public int seed = 12345;
 
+    [Header("Generation")]
     public int maxPieces = 80;
 
-    public float gridSize = 36f;
+    public float noiseScale = 0.15f;
+
+    public float turnThreshold = 0.65f;
+
+    public float rampUpThreshold = 0.75f;
+
+    public float rampDownThreshold = 0.25f;
 
     [Header("Pieces")]
+    public TunnelPiece startPiece;
+
     public TunnelPiece[] straightPieces;
 
-    public TunnelPiece[] turnPieces;
+    public TunnelPiece[] leftTurnPieces;
+
+    public TunnelPiece[] rightTurnPieces;
 
     public TunnelPiece[] rampUpPieces;
 
@@ -25,17 +35,23 @@ public class TunnelGenerator : MonoBehaviour
 
     public TunnelPiece bossRoom;
 
+    [Header("Rooms")]
+    [Range(0f, 1f)]
+    public float roomChance = 0.08f;
+
+    [Header("Enemies")]
+    public GameObject enemyPrefab;
+
+    [Range(0f, 1f)]
+    public float enemySpawnChance = 0.35f;
+
     private System.Random rng;
 
-    private List<Transform> openExits =
-        new List<Transform>();
+    private Transform currentExit;
 
-    private HashSet<Vector3Int> occupiedCells =
-        new HashSet<Vector3Int>();
+    private float noiseOffsetA;
 
-    private Transform furthestExit;
-
-    private float furthestDistance;
+    private float noiseOffsetB;
 
     void Start()
     {
@@ -44,264 +60,267 @@ public class TunnelGenerator : MonoBehaviour
 
     void Generate()
     {
-        rng = new System.Random(seed);
+        rng =
+            new System.Random(seed);
 
-        TunnelPiece startPiece =
+        noiseOffsetA =
+            seed * 0.173f;
+
+        noiseOffsetB =
+            seed * 0.827f;
+
+        TunnelPiece first =
             Instantiate(
-                straightPieces[0],
+                startPiece,
                 Vector3.zero,
                 Quaternion.identity
             );
 
-        RegisterPiece(startPiece);
+        RegisterPiece(first);
 
-        foreach (
-            Transform exit
-            in startPiece.exits
+        if (
+            first.exits.Length == 0
         )
         {
-            openExits.Add(exit);
-        }
-
-        int placedPieces = 1;
-
-        while (
-            openExits.Count > 0 &&
-            placedPieces < maxPieces
-        )
-        {
-            int index =
-                rng.Next(openExits.Count);
-
-            Transform targetExit =
-                openExits[index];
-
-            openExits.RemoveAt(index);
-
-            bool success =
-                TryPlacePiece(targetExit);
-
-            if (success)
-            {
-                placedPieces++;
-            }
-            else
-            {
-                SpawnDeadEnd(
-                    targetExit
-                );
-            }
-        }
-
-        if (furthestExit != null)
-        {
-            SpawnBossRoom(
-                furthestExit
-            );
-        }
-    }
-
-    bool TryPlacePiece(
-        Transform targetExit
-    )
-    {
-        List<TunnelPiece> candidates =
-            new List<TunnelPiece>();
-
-        candidates.AddRange(
-            straightPieces
-        );
-
-        candidates.AddRange(
-            turnPieces
-        );
-
-        // occasional ramps
-        if (rng.NextDouble() < 0.25)
-        {
-            candidates.AddRange(
-                rampUpPieces
+            Debug.LogError(
+                "Start piece has no exits!"
             );
 
-            candidates.AddRange(
-                rampDownPieces
-            );
+            return;
         }
 
-        // occasional rooms
-        if (rng.NextDouble() < 0.12)
-        {
-            candidates.AddRange(
-                roomPieces
-            );
-        }
+        currentExit =
+            first.exits[0];
 
         for (
             int i = 0;
-            i < 12;
+            i < maxPieces;
             i++
         )
         {
             TunnelPiece prefab =
-                candidates[
-                    rng.Next(
-                        candidates.Count
-                    )
-                ];
+                ChoosePiece(i);
+
+            if (prefab == null)
+            {
+                continue;
+            }
 
             TunnelPiece piece =
                 Instantiate(prefab);
 
-            AlignPieceToExit(
+            AlignPiece(
                 piece,
-                targetExit
+                currentExit
             );
-
-            if (
-                !CanPlacePiece(piece)
-            )
-            {
-                Destroy(
-                    piece.gameObject
-                );
-
-                continue;
-            }
 
             RegisterPiece(piece);
 
-            foreach (
-                Transform exit
-                in piece.exits
+            if (
+                piece.exits.Length > 0
             )
             {
-                openExits.Add(exit);
+                currentExit =
+                    piece.exits[
+                        rng.Next(
+                            piece.exits.Length
+                        )
+                    ];
             }
-
-            return true;
         }
 
-        return false;
-    }
-
-    bool CanPlacePiece(
-        TunnelPiece piece
-    )
-    {
-        foreach (
-            Vector3Int localCell
-            in piece.occupiedCells
+        if (
+            bossRoom != null
         )
         {
-            Vector3 worldPos =
-                piece.transform.position +
-                piece.transform.rotation *
-                Vector3.Scale(
-                    localCell,
-                    Vector3.one *
-                    gridSize
+            TunnelPiece boss =
+                Instantiate(
+                    bossRoom
                 );
 
-            Vector3Int cell =
-                WorldToGrid(
-                    worldPos
+            AlignPiece(
+                boss,
+                currentExit
+            );
+        }
+        else if (
+            deadEndPiece != null
+        )
+        {
+            TunnelPiece end =
+                Instantiate(
+                    deadEndPiece
                 );
 
-            if (
-                occupiedCells.Contains(
-                    cell
+            AlignPiece(
+                end,
+                currentExit
+            );
+        }
+    }
+
+    TunnelPiece ChoosePiece(
+        int index
+    )
+    {
+        float verticalNoise =
+            Mathf.PerlinNoise(
+                noiseOffsetA +
+                index * noiseScale,
+                0f
+            );
+
+        float turnNoise =
+            Mathf.PerlinNoise(
+                noiseOffsetB +
+                index * noiseScale,
+                100f
+            );
+
+        if (
+            rng.NextDouble() <
+            roomChance &&
+            roomPieces.Length > 0
+        )
+        {
+            return roomPieces[
+                rng.Next(
+                    roomPieces.Length
                 )
+            ];
+        }
+
+        if (
+            verticalNoise >
+            rampUpThreshold
+        )
+        {
+            if (
+                rampUpPieces.Length > 0
             )
             {
-                return false;
+                return rampUpPieces[
+                    rng.Next(
+                        rampUpPieces.Length
+                    )
+                ];
             }
         }
 
-        return true;
+        if (
+            verticalNoise <
+            rampDownThreshold
+        )
+        {
+            if (
+                rampDownPieces.Length > 0
+            )
+            {
+                return rampDownPieces[
+                    rng.Next(
+                        rampDownPieces.Length
+                    )
+                ];
+            }
+        }
+
+        if (
+            turnNoise >
+            turnThreshold
+        )
+        {
+            if (
+                rightTurnPieces.Length > 0
+            )
+            {
+                return rightTurnPieces[
+                    rng.Next(
+                        rightTurnPieces.Length
+                    )
+                ];
+            }
+        }
+
+        if (
+            turnNoise <
+            1f - turnThreshold
+        )
+        {
+            if (
+                leftTurnPieces.Length > 0
+            )
+            {
+                return leftTurnPieces[
+                    rng.Next(
+                        leftTurnPieces.Length
+                    )
+                ];
+            }
+        }
+
+        if (
+            straightPieces.Length > 0
+        )
+        {
+            return straightPieces[
+                rng.Next(
+                    straightPieces.Length
+                )
+            ];
+        }
+
+        return null;
     }
 
     void RegisterPiece(
         TunnelPiece piece
     )
     {
-        foreach (
-            Vector3Int localCell
-            in piece.occupiedCells
+        piece.SpawnProps(rng);
+
+        SpawnEnemies(piece);
+    }
+
+    void SpawnEnemies(
+        TunnelPiece piece
+    )
+    {
+        if (
+            enemyPrefab == null
         )
         {
-            Vector3 worldPos =
-                piece.transform.position +
-                piece.transform.rotation *
-                Vector3.Scale(
-                    localCell,
-                    Vector3.one *
-                    gridSize
-                );
-
-            occupiedCells.Add(
-                WorldToGrid(
-                    worldPos
-                )
-            );
+            return;
         }
-
-        float distance =
-            Vector3.Distance(
-                Vector3.zero,
-                piece.transform.position
-            );
 
         if (
-            distance >
-            furthestDistance
+            piece.enemySpawnPoints == null
         )
         {
-            furthestDistance =
-                distance;
-
-            if (
-                piece.exits.Length > 0
-            )
-            {
-                furthestExit =
-                    piece.exits[0];
-            }
+            return;
         }
 
-        piece.SpawnProps(rng);
-    }
+        foreach (
+            Transform spawnPoint
+            in piece.enemySpawnPoints
+        )
+        {
+            if (
+                rng.NextDouble() >
+                enemySpawnChance
+            )
+            {
+                continue;
+            }
 
-    void SpawnDeadEnd(
-        Transform exit
-    )
-    {
-        TunnelPiece piece =
             Instantiate(
-                deadEndPiece
+                enemyPrefab,
+                spawnPoint.position,
+                spawnPoint.rotation
             );
-
-        AlignPieceToExit(
-            piece,
-            exit
-        );
+        }
     }
 
-    void SpawnBossRoom(
-        Transform exit
-    )
-    {
-        TunnelPiece piece =
-            Instantiate(
-                bossRoom
-            );
-
-        AlignPieceToExit(
-            piece,
-            exit
-        );
-    }
-
-    void AlignPieceToExit(
+    void AlignPiece(
         TunnelPiece piece,
         Transform targetExit
     )
@@ -321,27 +340,5 @@ public class TunnelGenerator : MonoBehaviour
 
         piece.transform.position +=
             offset;
-    }
-
-    Vector3Int WorldToGrid(
-        Vector3 position
-    )
-    {
-        return new Vector3Int(
-            Mathf.RoundToInt(
-                position.x /
-                gridSize
-            ),
-
-            Mathf.RoundToInt(
-                position.y /
-                gridSize
-            ),
-
-            Mathf.RoundToInt(
-                position.z /
-                gridSize
-            )
-        );
     }
 }

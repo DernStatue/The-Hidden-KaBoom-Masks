@@ -32,7 +32,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 8592096583702135993}
@@ -129,10 +129,19 @@ MonoBehaviour:
   entrance: {fileID: 8592096583702135993}
   exits:
   - {fileID: 8956247886447472743}
-  propPoints: []
+  occupiedCells: []
+  enemySpawnPoints: []
+  overlapCollider: {fileID: 570749278566052886}
+  propVolume: {fileID: 0}
   propSpawnChance: 0.4
+  propAttempts: 10
   possibleProps: []
-  collisionBounds: {fileID: 570749278566052886}
+  floorLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  raycastStartHeight: 2
+  raycastDistance: 20
+  maxFloorAngle: 45
 --- !u!114 &1909807154893333537
 MonoBehaviour:
   m_ObjectHideFlags: 0
