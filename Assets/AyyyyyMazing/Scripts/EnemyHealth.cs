@@ -2,15 +2,40 @@ using UnityEngine;
 
 public class EnemyHealth : MonoBehaviour
 {
-    public float health = 100f;
+    public float maxHealth = 100f;
+
+    public GameObject deathEffect;
+
+    float currentHealth;
+
+    bool dead;
+
+    void Start()
+    {
+        currentHealth =
+            maxHealth;
+    }
 
     public void TakeDamage(
         float damage
     )
     {
-        health -= damage;
+        if (dead)
+        {
+            return;
+        }
 
-        if (health <= 0f)
+        currentHealth -= damage;
+
+        Debug.Log(
+            gameObject.name +
+            " took damage: " +
+            damage
+        );
+
+        if (
+            currentHealth <= 0
+        )
         {
             Die();
         }
@@ -18,6 +43,19 @@ public class EnemyHealth : MonoBehaviour
 
     void Die()
     {
+        dead = true;
+
+        if (
+            deathEffect != null
+        )
+        {
+            Instantiate(
+                deathEffect,
+                transform.position,
+                Quaternion.identity
+            );
+        }
+
         Destroy(gameObject);
     }
 }

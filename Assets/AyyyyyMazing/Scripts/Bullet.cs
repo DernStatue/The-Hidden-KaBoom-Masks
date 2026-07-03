@@ -2,34 +2,51 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    public float speed = 80f;
-
     public float damage = 25f;
 
-    public float lifetime = 5f;
+    public float lifeTime = 5f;
+
+    bool hasHit;
 
     void Start()
     {
         Destroy(
             gameObject,
-            lifetime
+            lifeTime
         );
-    }
-
-    void Update()
-    {
-        transform.position +=
-            transform.forward *
-            speed *
-            Time.deltaTime;
     }
 
     void OnTriggerEnter(
         Collider other
     )
     {
+        TryDamage(
+            other.transform
+        );
+    }
+
+    void OnCollisionEnter(
+        Collision collision
+    )
+    {
+        TryDamage(
+            collision.transform
+        );
+    }
+
+    void TryDamage(
+        Transform hit
+    )
+    {
+        if (hasHit)
+        {
+            return;
+        }
+
+        hasHit = true;
+
         EnemyHealth enemy =
-            other.GetComponent<
+            hit.GetComponentInParent<
                 EnemyHealth>();
 
         if (enemy != null)

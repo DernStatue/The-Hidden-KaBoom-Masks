@@ -4,132 +4,230 @@ using UnityEngine;
 public class FPSController : MonoBehaviour
 {
     [Header("Movement")]
-    public float walkSpeed = 5f;
-    public float sprintSpeed = 8f;
-    public float crouchSpeed = 2.5f;
+    public float walkSpeed = 6f;
+
+    public float sprintSpeed = 10f;
+
     public float jumpHeight = 1.5f;
+
     public float gravity = -20f;
 
-[Header("Mouse Look")]
-    public float mouseSensitivity = 2f;
+    [Header("Mouse Look")]
     public Transform cameraHolder;
 
-    [Header("Crouch")]
-    public float standingHeight = 2f;
-    public float crouchingHeight = 1f;
-    public float crouchSmoothSpeed = 8f;
+    public float mouseSensitivity = 2f;
 
-    [Header("Ground Check")]
-    public Transform groundCheck;
-    public float groundDistance = 0.3f;
-    public LayerMask groundMask;
+    public float maxLookAngle = 85f;
 
-    private CharacterController controller;
+    [Header("Head Bob")]
+    public bool enableHeadBob = true;
 
-    private Vector3 velocity;
-    private bool isGrounded;
+    public float bobSpeed = 10f;
 
-    private float xRotation = 0f;
+    public float bobAmount = 0.05f;
 
-    private bool isCrouching;
+    CharacterController controller;
+
+    Vector3 velocity;
+
+    bool isGrounded;
+
+    float verticalLookRotation;
+
+    Vector3 cameraOriginalPos;
+
+    float bobTimer;
 
     void Start()
     {
-        controller = GetComponent<CharacterController>();
+        controller =
+            GetComponent<
+                CharacterController>();
 
-        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState =
+            CursorLockMode.Locked;
+
         Cursor.visible = false;
+
+        if (cameraHolder != null)
+        {
+            cameraOriginalPos =
+                cameraHolder.localPosition;
+        }
     }
 
     void Update()
     {
+        if (PauseMenu.IsPaused)
+        {
+            return;
+        }
+
         HandleMouseLook();
+
         HandleMovement();
-        HandleJump();
-        HandleCrouch();
-        ApplyGravity();
+
+        HandleHeadBob();
     }
 
     void HandleMouseLook()
     {
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        float mouseX =
+            Input.GetAxis(
+                "Mouse X"
+            ) *
+            mouseSensitivity;
 
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        float mouseY =
+            Input.GetAxis(
+                "Mouse Y"
+            ) *
+            mouseSensitivity;
 
-        cameraHolder.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
+        verticalLookRotation -=
+            mouseY;
+
+        verticalLookRotation =
+            Mathf.Clamp(
+                verticalLookRotation,
+                -maxLookAngle,
+                maxLookAngle
+            );
+
+        if (cameraHolder != null)
+        {
+            cameraHolder.localRotation =
+                Quaternion.Euler(
+                    verticalLookRotation,
+                    0f,
+                    0f
+                );
+        }
+
+        transform.Rotate(
+            Vector3.up *
+            mouseX
+        );
     }
 
     void HandleMovement()
     {
-        isGrounded = Physics.CheckSphere(
-            groundCheck.position,
-            groundDistance,
-            groundMask
-        );
+        isGrounded =
+            controller.isGrounded;
 
-        if (isGrounded && velocity.y < 0)
+        if (
+            isGrounded &&
+            velocity.y < 0
+        )
         {
             velocity.y = -2f;
         }
 
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+        float moveX =
+            Input.GetAxis(
+                "Horizontal"
+            );
 
-        float currentSpeed = walkSpeed;
-
-        if (Input.GetKey(KeyCode.LeftShift) && !isCrouching)
-        {
-            currentSpeed = sprintSpeed;
-        }
-
-        if (isCrouching)
-        {
-            currentSpeed = crouchSpeed;
-        }
+        float moveZ =
+            Input.GetAxis(
+                "Vertical"
+            );
 
         Vector3 move =
-            transform.right * x +
-            transform.forward * z;
+            transform.right *
+            moveX +
+            transform.forward *
+            moveZ;
 
-        controller.Move(move * currentSpeed * Time.deltaTime);
-    }
+        float speed =
+            Input.GetKey(
+                KeyCode.LeftShift
+            )
+            ? sprintSpeed
+            : walkSpeed;
 
-    void HandleJump()
-    {
+        controller.Move(
+            move *
+            speed *
+            Time.deltaTime
+        );
+
         if (
-            Input.GetButtonDown("Jump") &&
-            isGrounded &&
-            !isCrouching
+            Input.GetButtonDown(
+                "Jump"
+            ) &&
+            isGrounded
         )
         {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-        }
-    }
-
-    void HandleCrouch()
-    {
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-        {
-            isCrouching = !isCrouching;
+            velocity.y =
+                Mathf.Sqrt(
+                    jumpHeight *
+                    -2f *
+                    gravity
+                );
         }
 
-        float targetHeight =
-            isCrouching ? crouchingHeight : standingHeight;
+        velocity.y +=
+            gravity *
+            Time.deltaTime;
 
-        controller.height = Mathf.Lerp(
-            controller.height,
-            targetHeight,
-            crouchSmoothSpeed * Time.deltaTime
+        controller.Move(
+            velocity *
+            Time.deltaTime
         );
     }
 
-    void ApplyGravity()
+    void HandleHeadBob()
     {
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
-    }
+        if (
+            !enableHeadBob ||
+            cameraHolder == null
+        )
+        {
+            return;
+        }
 
+        Vector3 horizontalVelocity =
+            controller.velocity;
+
+        horizontalVelocity.y = 0f;
+
+        if (
+            horizontalVelocity.magnitude > 0.1f &&
+            isGrounded
+        )
+        {
+            bobTimer +=
+                Time.deltaTime *
+                bobSpeed;
+
+            float bobOffset =
+                Mathf.Sin(
+                    bobTimer
+                ) *
+                bobAmount;
+
+            cameraHolder.localPosition =
+                Vector3.Lerp(
+                    cameraHolder.localPosition,
+                    cameraOriginalPos +
+                    Vector3.up *
+                    bobOffset,
+                    Time.deltaTime *
+                    10f
+                );
+        }
+        else
+        {
+            bobTimer = 0f;
+
+            cameraHolder.localPosition =
+                Vector3.Lerp(
+                    cameraHolder.localPosition,
+                    cameraOriginalPos,
+                    Time.deltaTime *
+                    10f
+                );
+        }
+    }
 }
